@@ -1,0 +1,381 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Calcul SCR - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-calculator"></i> Calcul du SCR (Standard Formula)</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <!-- Lien conditionnel vers calcul avancé -->
+        {% if user_role == 'ACTUAIRE' or user_role == 'ADMIN' %}
+        <a href="{% url 'solvabilite_app:calcul_scr_avance' %}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-cogs"></i> Mode Avancé
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Vérification d'accès -->
+{% if user_role not in 'ACTUAIRE,RISK_MANAGER,ADMIN' %}
+<div class="alert alert-danger">
+    <h4><i class="fas fa-ban"></i> Accès Refusé</h4>
+    <p>
+        <strong>Fonctionnalité réservée :</strong>
+        Cette page est accessible uniquement aux <strong>Actuaires</strong>,
+        <strong>Risk Managers</strong> et <strong>Administrateurs</strong>.
+    </p>
+    <p>
+        Votre rôle actuel : <span class="badge bg-secondary">{{ user.get_role_display }}</span>
+    </p>
+    <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-primary">
+        Retour au Tableau de Bord
+    </a>
+</div>
+
+{% else %}
+<!-- Interface de calcul pour utilisateurs autorisés -->
+
+<!-- Informations utilisateur -->
+<div class="alert alert-info mb-4">
+    <i class="fas fa-user-shield"></i>
+    Connecté en tant que : <strong>{{ user.get_role_display }}</strong>
+    {% if compagnie %} | Compagnie : <strong>{{ compagnie.nom }}</strong>{% endif %}
+</div>
+
+<!-- Guide de calcul -->
+<div class="alert alert-info mb-4">
+    <h5><i class="fas fa-info-circle"></i> Guide de calcul SCR</h5>
+    <p class="mb-0">
+        Le SCR (Solvency Capital Requirement) est calculé selon la formule standard Solvabilité II.
+        Il intègre les modules de risque : Marché, Crédit, Souscription Vie et Non-Vie avec corrélations.
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-edit"></i> Saisie des Données de Base</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Fonds Propres Éligibles (M€) *</label>
+                                <input type="number" name="fonds_propres" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.fonds_propres }}{% elif derniere_saisie %}{{ derniere_saisie.fonds_propres }}{% endif %}">
+                                <div class="form-text">Capital de base et réserves éligibles</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Passif Technique (M€) *</label>
+                                <input type="number" name="passif_technique" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.passif_technique }}{% elif derniere_saisie %}{{ derniere_saisie.passif_technique }}{% endif %}">
+                                <div class="form-text">Provisions techniques totales</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Prime Annuelle (M€) *</label>
+                                <input type="number" name="prime_annuelle" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.prime_annuelle }}{% elif derniere_saisie %}{{ derniere_saisie.prime_annuelle }}{% endif %}">
+                                <div class="form-text">Primes émises annuellement</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Date de référence</label>
+                                <input type="date" name="date_reference" class="form-control"
+                                       value="{% now 'Y-m-d' %}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-exclamation-triangle"></i> Modules de Risque</h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Capital Requis - Risque Marché (M€) *</label>
+                                <input type="number" name="capital_requis_marche" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.modules.marche.valeur|default:resultats.modules.marche }}{% elif derniere_saisie %}{{ derniere_saisie.scr_marche }}{% endif %}">
+                                <div class="form-text">Risque de taux, actions, immobilier</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Capital Requis - Risque Crédit (M€) *</label>
+                                <input type="number" name="capital_requis_credit" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.modules.credit.valeur|default:resultats.modules.credit }}{% elif derniere_saisie %}{{ derniere_saisie.scr_credit }}{% endif %}">
+                                <div class="form-text">Contrepartie, spread, concentration</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Capital Requis - Risque Vie (M€) *</label>
+                                <input type="number" name="capital_requis_vie" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.modules.vie.valeur|default:resultats.modules.vie }}{% elif derniere_saisie %}{{ derniere_saisie.scr_vie }}{% endif %}">
+                                <div class="form-text">Mortalité, longévité, rachat</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Capital Requis - Risque Non-Vie (M€) *</label>
+                                <input type="number" name="capital_requis_non_vie" class="form-control" step="0.01" min="0" required
+                                       value="{% if resultats %}{{ resultats.modules.non_vie.valeur|default:resultats.modules.non_vie }}{% elif derniere_saisie %}{{ derniere_saisie.scr_non_vie }}{% endif %}">
+                                <div class="form-text">Primes, sinistres, catastrophes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-calculator"></i> Calculer le SCR
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Aide à la saisie -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-life-ring"></i> Aide à la Saisie</h6>
+            </div>
+            <div class="card-body">
+                <h6>Fonds Propres Éligibles</h6>
+                <p class="small">Capital social + Réserves + Report à nouveau + Résultat</p>
+
+                <h6>Passif Technique</h6>
+                <p class="small">Provisions pour sinistres + Provisions pour primes</p>
+
+                <h6>Capital Requis par Module</h6>
+                <p class="small">Valeur en capital des risques selon formule standard</p>
+
+                <div class="alert alert-warning mt-3">
+                    <small>
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Formule utilisée :</strong><br>
+                        SCR = √(SCR<sub>marché</sub>² + SCR<sub>crédit</sub>² + ... + 2×ρ×SCR<sub>i</sub>×SCR<sub>j</sub>)
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estimation en temps réel -->
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-chart-line"></i> Estimation Rapide</h6>
+            </div>
+            <div class="card-body">
+                <div id="estimationContainer">
+                    <div class="text-center">
+                        <i class="fas fa-calculator fa-2x text-muted mb-3"></i>
+                        <p>Remplissez les champs pour voir une estimation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Résultats (affiché après calcul) -->
+{% if resultats %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-check-circle"></i> Résultats du Calcul</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>SCR Calculé</h5>
+                            <h3 class="text-primary">{{ resultats.scr }} M€</h3>
+                            <small class="text-muted">Solvency Capital Requirement</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>MCR</h5>
+                            <h3 class="text-info">{{ resultats.mcr }} M€</h3>
+                            <small class="text-muted">Minimum Capital Requirement</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>Ratio Solvabilité</h5>
+                            <h3 class="text-{{ resultats.couleur_statut }}">{{ resultats.ratio }}%</h3>
+                            <small class="text-muted">Fonds Propres / SCR</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>Statut</h5>
+                            <span class="badge bg-{{ resultats.couleur_statut }} fs-6 p-2">{{ resultats.statut }}</span>
+                            <div class="mt-2">
+                                {% if resultats.ratio > 150 %}
+                                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                                {% elif resultats.ratio > 100 %}
+                                    <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détail des modules -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3"><i class="fas fa-cubes"></i> Répartition par Module de Risque</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Module de Risque</th>
+                                        <th>Capital Requis (M€)</th>
+                                        <th>Poids dans le SCR</th>
+                                        <th>Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for module, valeur in resultats.modules.items %}
+                                    <tr>
+                                        <td>
+                                            {% if module == 'marche' %}Risque Marché
+                                            {% elif module == 'credit' %}Risque Crédit
+                                            {% elif module == 'vie' %}Risque Vie
+                                            {% elif module == 'non_vie' %}Risque Non-Vie
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold">{{ valeur.valeur|default:valeur }}</td>
+                                        <td>{{ valeur.pourcentage|default:"0"|floatformat:1 }}%</td>
+                                        <td>
+                                            {% with poids=valeur.pourcentage|default:0|floatformat:0 %}
+                                                {% if poids > 30 %}
+                                                    <span class="badge bg-danger">Élevé</span>
+                                                {% elif poids > 15 %}
+                                                    <span class="badge bg-warning">Moyen</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">Faible</span>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar"></i> Voir dans les Indicateurs
+                    </a>
+                    <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-outline-primary ms-2">
+                        <i class="fas fa-edit"></i> Nouveau Calcul
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %} <!-- Fin du bloc utilisateurs autorisés -->
+
+<!-- Messages Django -->
+{% if messages %}
+<div class="row mt-4">
+    <div class="col-12">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Estimation en temps réel
+function updateEstimation() {
+    const fondsPropres = parseFloat(document.querySelector('[name="fonds_propres"]').value) || 0;
+    const marche = parseFloat(document.querySelector('[name="capital_requis_marche"]').value) || 0;
+    const credit = parseFloat(document.querySelector('[name="capital_requis_credit"]').value) || 0;
+    const vie = parseFloat(document.querySelector('[name="capital_requis_vie"]').value) || 0;
+    const nonVie = parseFloat(document.querySelector('[name="capital_requis_non_vie"]').value) || 0;
+
+    // Calcul simplifié pour l'estimation
+    const scrEstime = Math.sqrt(marche**2 + credit**2 + vie**2 + nonVie**2 +
+                               2*0.5*(marche*credit + marche*vie + marche*nonVie + credit*vie + credit*nonVie + vie*nonVie));
+
+    const ratioEstime = scrEstime > 0 ? (fondsPropres / scrEstime) * 100 : 0;
+
+    const container = document.getElementById('estimationContainer');
+
+    if (marche > 0 || credit > 0 || vie > 0 || nonVie > 0) {
+        let statutClass = 'text-warning';
+        let statutText = 'En attente';
+
+        if (ratioEstime > 150) {
+            statutClass = 'text-success';
+            statutText = 'Conforme';
+        } else if (ratioEstime > 100) {
+            statutClass = 'text-warning';
+            statutText = 'Surveillance';
+        } else if (ratioEstime > 0) {
+            statutClass = 'text-danger';
+            statutText = 'Risque';
+        }
+
+        container.innerHTML = `
+            <div class="text-center">
+                <h4 class="${statutClass}">${ratioEstime.toFixed(1)}%</h4>
+                <p class="mb-1"><strong>SCR estimé:</strong> ${scrEstime.toFixed(1)} M€</p>
+                <p class="mb-1"><strong>Statut:</strong> <span class="badge bg-${statutClass.replace('text-', '')}">${statutText}</span></p>
+                <small class="text-muted">Estimation basée sur les données saisies</small>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-calculator fa-2x text-muted mb-3"></i>
+                <p>Remplissez les champs pour voir une estimation</p>
+            </div>
+        `;
+    }
+}
+
+// Écouter les changements sur les champs
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('input', updateEstimation);
+});
+
+// Initialiser l'estimation
+updateEstimation();
+</script>
+{% endblock %}

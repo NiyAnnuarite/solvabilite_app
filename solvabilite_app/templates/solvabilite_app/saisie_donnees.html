@@ -1,0 +1,46 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Saisie des Données - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-edit"></i> Saisie des Données Comptables</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-upload"></i> Importer
+        </button>
+    </div>
+</div>
+
+<!-- Le reste du code de saisie_donnees.html reste inchangé -->
+<!-- ... -->
+
+<!-- Navigation entre pages -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card border-light">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-arrow-left me-2"></i>Indicateurs
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-tachometer-alt me-2"></i>Tableau de bord
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-primary w-100">
+                            Calculer SCR <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Le reste du code JavaScript reste inchangé -->

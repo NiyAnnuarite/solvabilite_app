@@ -1,0 +1,68 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Historique des Calculs - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-history"></i> Historique des Calculs SCR</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <span class="badge bg-primary fs-6">Total: {{ total_calculs }} calculs</span>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h6 class="m-0 font-weight-bold"><i class="fas fa-table"></i> Historique des Calculs</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Méthode</th>
+                        <th>SCR Calculé</th>
+                        <th>Fonds Propres</th>
+                        <th>Ratio</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calcul in calculs %}
+                    <tr>
+                        <td>{{ calcul.date_calcul|date:"d/m/Y H:i" }}</td>
+                        <td>{{ calcul.methode_calcul }}</td>
+                        <td class="fw-bold">{{ calcul.resultat_scr|floatformat:2 }} €</td>
+                        <td>{{ calcul.donnees.fonds_propres_tier1|floatformat:2 }} €</td>
+                        <td>
+                            <span class="badge {% if calcul.donnees.ratio_solvabilite > 150 %}bg-success{% elif calcul.donnees.ratio_solvabilite > 100 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ calcul.donnees.ratio_solvabilite }}%
+                            </span>
+                        </td>
+                        <td>
+                            {% if calcul.donnees.ratio_solvabilite > 150 %}
+                                <i class="fas fa-check-circle text-success"></i> Conforme
+                            {% elif calcul.donnees.ratio_solvabilite > 100 %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i> Surveillance
+                            {% else %}
+                                <i class="fas fa-times-circle text-danger"></i> Non conforme
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'resultats_calcul' calcul.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Voir
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Aucun calcul effectué</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

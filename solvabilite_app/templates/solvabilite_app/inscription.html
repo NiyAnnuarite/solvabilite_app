@@ -1,0 +1,416 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Inscription - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Créer un compte</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Veuillez corriger les erreurs ci-dessous.
+                    </div>
+                    {% endif %}
+
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Prénom *</label>
+                                <input type="text" name="first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                       value="{{ form.first_name.value|default:'' }}" required>
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.first_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nom *</label>
+                                <input type="text" name="last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                       value="{{ form.last_name.value|default:'' }}" required>
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.last_name.errors.0 }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                               value="{{ form.email.value|default:'' }}" required>
+                        {% if form.email.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.email.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe *</label>
+                        <div class="input-group">
+                            <input type="password" name="password1" id="password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}"
+                                   required placeholder="Choisissez un mot de passe sécurisé">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="password1">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if form.password1.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password1.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-text">
+                            <small>
+                                <ul class="ps-3 mb-0">
+                                    <li>Au moins 8 caractères</li>
+                                    <li>Ne pas utiliser votre email comme mot de passe</li>
+                                    <li>Inclure des chiffres et des lettres</li>
+                                </ul>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Confirmation du mot de passe *</label>
+                        <div class="input-group">
+                            <input type="password" name="password2" id="password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}"
+                                   required placeholder="Confirmez votre mot de passe">
+                            <button type="button" class="btn btn-outline-secondary toggle-password" data-target="password2">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if form.password2.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password2.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rôle *</label>
+                        <select name="role" class="form-control {% if form.role.errors %}is-invalid{% endif %}" required>
+                            <option value="">Sélectionnez votre rôle</option>
+                            <option value="ACTUAIRE" {% if form.role.value == "ACTUAIRE" %}selected{% endif %}>Actuaire</option>
+                            <option value="RISK_MANAGER" {% if form.role.value == "RISK_MANAGER" %}selected{% endif %}>Risk Manager</option>
+                            <option value="CONTROLEUR" {% if form.role.value == "CONTROLEUR" %}selected{% endif %}>Contrôleur de Gestion</option>
+                            <option value="DG" {% if form.role.value == "DG" %}selected{% endif %}>Directeur Général</option>
+                            <option value="CONSULTANT" {% if form.role.value == "CONSULTANT" %}selected{% endif %}>Consultant</option>
+                            <option value="CLIENT" {% if form.role.value == "CLIENT" %}selected{% endif %}>Client</option>
+                            <option value="REGULATEUR" {% if form.role.value == "REGULATEUR" %}selected{% endif %}>Régulateur</option>
+                            <option value="ADMIN" {% if form.role.value == "ADMIN" %}selected{% endif %}>Administrateur</option>
+                            <option value="RH" {% if form.role.value == "RH" %}selected{% endif %}>Responsable RH</option>
+                        </select>
+                        {% if form.role.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.role.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Entreprise/Compagnie *</label>
+                        <select name="compagnie" class="form-control {% if form.compagnie.errors %}is-invalid{% endif %}" required>
+                            <option value="">Sélectionnez votre entreprise</option>
+                            <option value="AXA" {% if form.compagnie.value == "AXA" %}selected{% endif %}>AXA</option>
+                            <option value="ALLIANZ" {% if form.compagnie.value == "ALLIANZ" %}selected{% endif %}>Allianz</option>
+                            <option value="GROUPAMA" {% if form.compagnie.value == "GROUPAMA" %}selected{% endif %}>Groupama</option>
+                            <option value="GENERALI" {% if form.compagnie.value == "GENERALI" %}selected{% endif %}>Generali</option>
+                            <option value="CNP_ASSURANCES" {% if form.compagnie.value == "CNP_ASSURANCES" %}selected{% endif %}>CNP Assurances</option>
+                            <option value="MACIF" {% if form.compagnie.value == "MACIF" %}selected{% endif %}>MACIF</option>
+                            <option value="MAIF" {% if form.compagnie.value == "MAIF" %}selected{% endif %}>MAIF</option>
+                            <option value="MMA" {% if form.compagnie.value == "MMA" %}selected{% endif %}>MMA</option>
+                            <option value="ACER" {% if form.compagnie.value == "ACER" %}selected{% endif %}>Acer</option>
+                            <option value="AUTRE" {% if form.compagnie.value == "AUTRE" %}selected{% endif %}>Autre compagnie</option>
+                        </select>
+                        {% if form.compagnie.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.compagnie.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="accept_conditions" id="accept_conditions" class="form-check-input {% if form.accept_conditions.errors %}is-invalid{% endif %}"
+                                   {% if form.accept_conditions.value %}checked{% endif %} required>
+                            <label class="form-check-label" for="accept_conditions">
+                                J'accepte les <a href="#" class="text-primary">conditions d'utilisation</a> et la
+                                <a href="#" class="text-primary">politique de confidentialité</a> *
+                            </label>
+                            {% if form.accept_conditions.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.accept_conditions.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Créer mon compte
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="mb-0">
+                        Déjà un compte ?
+                        <a href="{% url 'solvabilite_app:connexion' %}" class="text-primary">Se connecter</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations sur les rôles -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations sur les rôles</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Actuaire</h6>
+                        <p class="small text-muted">Accès complet aux calculs avancés et modélisations</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Risk Manager</h6>
+                        <p class="small text-muted">Gestion des risques et analyses de solvabilité</p>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <h6>Contrôleur</h6>
+                        <p class="small text-muted">Suivi des indicateurs et reporting</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Directeur Général</h6>
+                        <p class="small text-muted">Vue d'ensemble et tableau de bord stratégique</p>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <h6>Client</h6>
+                        <p class="small text-muted">Consultation des rapports et indicateurs</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Consultant</h6>
+                        <p class="small text-muted">Accès aux outils d'analyse et de conseil</p>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <h6>Régulateur</h6>
+                        <p class="small text-muted">Supervision et contrôle réglementaire</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Administrateur</h6>
+                        <p class="small text-muted">Gestion des utilisateurs et paramètres système</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Fonction pour afficher/masquer le mot de passe
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de l'affichage des mots de passe
+    const toggleButtons = document.querySelectorAll('.toggle-password');
+
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const passwordInput = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+
+    // Validation en temps réel des mots de passe
+    const password1 = document.getElementById('password1');
+    const password2 = document.getElementById('password2');
+    const emailInput = document.querySelector('input[name="email"]');
+
+    function validatePassword() {
+        // Validation de correspondance
+        if (password1.value !== password2.value) {
+            password2.setCustomValidity('Les mots de passe ne correspondent pas');
+        } else {
+            password2.setCustomValidity('');
+        }
+
+        // Validation de similarité avec l'email
+        const email = emailInput ? emailInput.value : '';
+        if (email && password1.value.toLowerCase().includes(email.toLowerCase().split('@')[0])) {
+            password1.setCustomValidity('Le mot de passe est trop similaire à votre email');
+        } else {
+            password1.setCustomValidity('');
+        }
+
+        // Validation de force
+        if (password1.value.length < 8) {
+            password1.setCustomValidity('Le mot de passe doit contenir au moins 8 caractères');
+        } else if (password1.validity.customError === false) {
+            password1.setCustomValidity('');
+        }
+    }
+
+    // Événements de validation
+    if (password1 && password2) {
+        password1.addEventListener('input', validatePassword);
+        password2.addEventListener('input', validatePassword);
+    }
+
+    if (emailInput) {
+        emailInput.addEventListener('input', validatePassword);
+    }
+
+    // Validation initiale
+    validatePassword();
+
+    // Validation de la force du mot de passe avec indicateur visuel
+    const passwordStrength = document.createElement('div');
+    passwordStrength.id = 'password-strength';
+    passwordStrength.className = 'form-text';
+    password1.parentNode.appendChild(passwordStrength);
+
+    password1.addEventListener('input', function() {
+        const password = this.value;
+        const strengthText = document.getElementById('password-strength');
+
+        if (!strengthText) return;
+
+        let strength = 'Faible';
+        let color = 'text-danger';
+        let suggestions = [];
+
+        // Critères de force
+        const hasMinLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (password.length >= 12 && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar) {
+            strength = 'Très fort';
+            color = 'text-success';
+        } else if (password.length >= 10 && hasUpperCase && hasLowerCase && hasNumbers) {
+            strength = 'Fort';
+            color = 'text-info';
+        } else if (password.length >= 8 && hasUpperCase && hasLowerCase) {
+            strength = 'Moyen';
+            color = 'text-warning';
+            suggestions.push('Ajoutez des chiffres pour renforcer');
+        } else if (password.length >= 8) {
+            strength = 'Faible';
+            color = 'text-danger';
+            suggestions.push('Utilisez des majuscules, minuscules et chiffres');
+        } else {
+            strength = 'Très faible';
+            color = 'text-danger';
+        }
+
+        strengthText.innerHTML = `<strong>Force : ${strength}</strong>`;
+        strengthText.className = `form-text ${color}`;
+
+        // Suggestions
+        if (suggestions.length > 0) {
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'mt-1';
+            suggestionsDiv.innerHTML = `<small class="text-muted">${suggestions.join(', ')}</small>`;
+            strengthText.appendChild(suggestionsDiv);
+        }
+    });
+});
+</script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.toggle-password {
+    border-left: none;
+}
+
+.toggle-password:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+.input-group .form-control:focus + .toggle-password {
+    border-color: #667eea;
+}
+
+/* Style pour les sélecteurs */
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+/* Style pour les messages d'erreur */
+.invalid-feedback {
+    display: block;
+}
+
+/* Style pour les suggestions de mot de passe */
+#password-strength {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,381 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Tableau de Bord Graphiques - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chart-bar"></i> Tableau de Bord Graphique</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button class="btn btn-sm btn-outline-secondary">1M</button>
+            <button class="btn btn-sm btn-outline-secondary active">3M</button>
+            <button class="btn btn-sm btn-outline-secondary">1A</button>
+            <button class="btn btn-sm btn-outline-secondary">3A</button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres graphiques -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Type de Graphique</label>
+                <select class="form-select" id="chartType">
+                    <option value="evolution">Évolution Temporelle</option>
+                    <option value="comparison">Comparaison Compagnies</option>
+                    <option value="distribution">Distribution des Ratios</option>
+                    <option value="correlation">Analyse de Corrélation</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Indicateur</label>
+                <select class="form-select" id="indicatorSelect">
+                    <option value="ratio">Ratio de Solvabilité</option>
+                    <option value="scr">SCR</option>
+                    <option value="fonds_propres">Fonds Propres</option>
+                    <option value="mcr">MCR</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Période</label>
+                <select class="form-select" id="periodSelect">
+                    <option value="1m">1 mois</option>
+                    <option value="3m" selected>3 mois</option>
+                    <option value="1a">1 an</option>
+                    <option value="3a">3 ans</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-primary w-100" onclick="updateCharts()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grille de graphiques -->
+<div class="row">
+    <!-- Graphique principal -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-chart-line"></i> Évolution des Indicateurs Clés</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="mainChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique secondaire -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-chart-pie"></i> Répartition des Risques</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="riskDistributionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deuxième ligne de graphiques -->
+<div class="row">
+    <!-- Heatmap des corrélations -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-th"></i> Matrice de Corrélation des Risques</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="correlationHeatmap" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution des ratios -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-chart-bar"></i> Distribution des Ratios de Solvabilité</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="ratioDistributionChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Troisième ligne de graphiques -->
+<div class="row">
+    <!-- Comparaison compagnies -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-balance-scale"></i> Comparaison des Compagnies</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="companyComparisonChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cartes de métriques -->
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                <h5>Volatilité Moyenne</h5>
+                <h3>8.5%</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <i class="fas fa-arrows-alt-h fa-2x mb-2"></i>
+                <h5>Écart-Type Ratios</h5>
+                <h3>12.3%</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-percentage fa-2x mb-2"></i>
+                <h5>Corrélation Moyenne</h5>
+                <h3>0.45</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                <i class="fas fa-project-diagram fa-2x mb-2"></i>
+                <h5>Diversification</h5>
+                <h3>72%</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Graphique principal
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+const mainChart = new Chart(mainCtx, {
+    type: 'line',
+    data: {
+        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7', 'Sem 8', 'Sem 9', 'Sem 10', 'Sem 11', 'Sem 12'],
+        datasets: [{
+            label: 'Ratio de Solvabilité (%)',
+            data: [165, 162, 168, 172, 175, 170, 165, 168, 172, 175, 178, 180],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: 'SCR (M€)',
+            data: [45, 48, 46, 44, 42, 45, 48, 46, 44, 42, 40, 38],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Ratio (%)'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'SCR (M€)'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                },
+            },
+        }
+    }
+});
+
+// Graphique de distribution des risques
+const riskCtx = document.getElementById('riskDistributionChart').getContext('2d');
+new Chart(riskCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Risque Marché', 'Risque Crédit', 'Risque Vie', 'Risque Non-Vie', 'Risque Opérationnel'],
+        datasets: [{
+            data: [35, 25, 20, 15, 5],
+            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Heatmap de corrélation
+const heatmapCtx = document.getElementById('correlationHeatmap').getContext('2d');
+new Chart(heatmapCtx, {
+    type: 'matrix',
+    data: {
+        datasets: [{
+            label: 'Matrice de Corrélation',
+            data: [
+                {x: 'Marché', y: 'Marché', v: 1.0},
+                {x: 'Marché', y: 'Crédit', v: 0.5},
+                {x: 'Marché', y: 'Vie', v: 0.4},
+                {x: 'Marché', y: 'Non-Vie', v: 0.3},
+                {x: 'Crédit', y: 'Crédit', v: 1.0},
+                {x: 'Crédit', y: 'Vie', v: 0.6},
+                {x: 'Crédit', y: 'Non-Vie', v: 0.4},
+                {x: 'Vie', y: 'Vie', v: 1.0},
+                {x: 'Vie', y: 'Non-Vie', v: 0.5},
+                {x: 'Non-Vie', y: 'Non-Vie', v: 1.0}
+            ],
+            backgroundColor(context) {
+                const value = context.dataset.data[context.dataIndex].v;
+                const alpha = (value + 1) / 2;
+                return Chart.helpers.color('red').rgbString();
+            },
+            borderWidth: 1,
+            borderColor: 'white',
+            width: ({chart}) => (chart.chartArea.width / 4) - 1,
+            height: ({chart}) => (chart.chartArea.height / 4) - 1
+        }]
+    },
+    options: {
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `Corrélation: ${context.dataset.data[context.dataIndex].v}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                type: 'category',
+                labels: ['Marché', 'Crédit', 'Vie', 'Non-Vie'],
+                ticks: {
+                    display: true
+                },
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                type: 'category',
+                labels: ['Marché', 'Crédit', 'Vie', 'Non-Vie'],
+                offset: true,
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+// Distribution des ratios
+const distCtx = document.getElementById('ratioDistributionChart').getContext('2d');
+new Chart(distCtx, {
+    type: 'bar',
+    data: {
+        labels: ['<100%', '100-120%', '120-150%', '150-180%', '180-200%', '>200%'],
+        datasets: [{
+            label: 'Nombre de Compagnies',
+            data: [2, 5, 8, 12, 15, 8],
+            backgroundColor: [
+                '#dc3545',
+                '#ffc107',
+                '#fd7e14',
+                '#20c997',
+                '#198754',
+                '#0d6efd'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Distribution par Plage de Ratio'
+            }
+        }
+    }
+});
+
+// Comparaison compagnies
+const compCtx = document.getElementById('companyComparisonChart').getContext('2d');
+new Chart(compCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Comp A', 'Comp B', 'Comp C', 'Comp D', 'Comp E', 'Comp F', 'Comp G', 'Comp H'],
+        datasets: [{
+            label: 'Ratio de Solvabilité (%)',
+            data: [185, 172, 195, 158, 168, 145, 178, 162],
+            backgroundColor: function(context) {
+                const value = context.dataset.data[context.dataIndex];
+                if (value > 180) return '#198754';
+                if (value > 150) return '#20c997';
+                if (value > 100) return '#ffc107';
+                return '#dc3545';
+            }
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Comparaison des Ratios par Compagnie'
+            }
+        }
+    }
+});
+
+function updateCharts() {
+    // Simulation de mise à jour des graphiques
+    console.log('Mise à jour des graphiques...');
+    // En production, ici on rechargerait les données via AJAX
+}
+</script>
+{% endblock %}

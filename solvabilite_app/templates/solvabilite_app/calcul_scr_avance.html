@@ -1,0 +1,512 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Calcul SCR Avancé - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-cogs"></i> Calcul Avancé du SCR</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-calculator"></i> Mode Standard
+        </a>
+    </div>
+</div>
+
+<!-- Vérification d'accès - ACTUAIRES et ADMIN seulement -->
+{% if user_role not in 'ACTUAIRE,ADMIN' %}
+<div class="alert alert-danger">
+    <h4><i class="fas fa-ban"></i> Accès Refusé</h4>
+    <p>
+        <strong>Fonctionnalité réservée :</strong>
+        Cette page est accessible uniquement aux <strong>Actuaires</strong> et <strong>Administrateurs</strong>.
+    </p>
+    <p>
+        Votre rôle actuel : <span class="badge bg-secondary">{{ user.get_role_display }}</span>
+    </p>
+    <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-primary">
+        Retour au Tableau de Bord
+    </a>
+</div>
+
+{% else %}
+<!-- Interface de calcul avancé pour utilisateurs autorisés -->
+
+<!-- Informations utilisateur -->
+<div class="alert alert-info mb-4">
+    <i class="fas fa-user-shield"></i>
+    Connecté en tant que : <strong>{{ user.get_role_display }}</strong>
+    {% if compagnie %} | Compagnie : <strong>{{ compagnie.nom }}</strong>{% endif %}
+</div>
+
+<!-- Guide de calcul avancé -->
+<div class="alert alert-info mb-4">
+    <h5><i class="fas fa-info-circle"></i> Calcul SCR Avancé - Mode Actuaire</h5>
+    <p class="mb-0">
+        Saisie détaillée de tous les sous-risques pour un calcul précis du SCR selon la formule standard Solvabilité II.
+        <strong>Réservé aux experts actuariels.</strong>
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-edit"></i> Saisie Détaillée des Risques</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Section Données de Base -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-database"></i> Données de Base</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Fonds Propres Éligibles (M€) *</label>
+                                <input type="number" name="fonds_propres" class="form-control" step="0.01" min="0" required
+                                       value="{{ resultats.fonds_propres|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Passif Technique (M€) *</label>
+                                <input type="number" name="passif_technique" class="form-control" step="0.01" min="0" required
+                                       value="{{ resultats.passif_technique|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Prime Annuelle (M€)</label>
+                                <input type="number" name="prime_annuelle" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.prime_annuelle|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Placements (M€)</label>
+                                <input type="number" name="placements" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.placements|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Immobilisations (M€)</label>
+                                <input type="number" name="immobilisations" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.immobilisations|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Charges Sinistres (M€)</label>
+                                <input type="number" name="charges_sinistres" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.charges_sinistres|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Risque Marché -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-chart-line"></i> Risque Marché - Détail</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque de Taux (M€)</label>
+                                <input type="number" name="risque_taux" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.marche.taux|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Actions (M€)</label>
+                                <input type="number" name="risque_actions" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.marche.actions|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Immobilier (M€)</label>
+                                <input type="number" name="risque_immobilier" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.marche.immobilier|default:0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Risque Crédit -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-hand-holding-usd"></i> Risque Crédit - Détail</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Contrepartie (M€)</label>
+                                <input type="number" name="risque_contrepartie" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.credit.contrepartie|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Spread (M€)</label>
+                                <input type="number" name="risque_spread" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.credit.spread|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Concentration (M€)</label>
+                                <input type="number" name="concentration" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.credit.concentration|default:0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Risque Vie -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-heartbeat"></i> Risque Vie - Détail</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Mortalité (M€)</label>
+                                <input type="number" name="mortalite" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.vie.mortalite|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Longévité (M€)</label>
+                                <input type="number" name="longevite" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.vie.longevite|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Rachat (M€)</label>
+                                <input type="number" name="rachat" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.vie.rachat|default:0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Risque Non-Vie -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-car-crash"></i> Risque Non-Vie - Détail</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Primes (M€)</label>
+                                <input type="number" name="risque_primes" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.non_vie.primes|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Sinistres (M€)</label>
+                                <input type="number" name="risque_sinistres" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.non_vie.sinistres|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Catastrophes (M€)</label>
+                                <input type="number" name="catastrophes" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.sous_risques.non_vie.catastrophes|default:0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section Risque Opérationnel -->
+                    <h5 class="mt-4 mb-3 text-primary"><i class="fas fa-cogs"></i> Risque Opérationnel</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Risque Opérationnel (M€)</label>
+                                <input type="number" name="scr_operational" class="form-control" step="0.01" min="0"
+                                       value="{{ resultats.modules.operational|default:0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Date de référence</label>
+                                <input type="date" name="date_reference" class="form-control" value="{% now 'Y-m-d' %}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-calculator"></i> Calculer le SCR Avancé
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Résultats (affiché après calcul) -->
+{% if resultats %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="m-0 font-weight-bold"><i class="fas fa-check-circle"></i> Résultats du Calcul Avancé</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>SCR Calculé</h5>
+                            <h3 class="text-primary">{{ resultats.scr }} M€</h3>
+                            <small class="text-muted">Solvency Capital Requirement</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>MCR</h5>
+                            <h3 class="text-info">{{ resultats.mcr }} M€</h3>
+                            <small class="text-muted">Minimum Capital Requirement</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>Ratio Solvabilité</h5>
+                            <h3 class="text-{{ resultats.couleur_statut }}">{{ resultats.ratio }}%</h3>
+                            <small class="text-muted">Fonds Propres / SCR</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card">
+                            <h5>Statut</h5>
+                            <span class="badge bg-{{ resultats.couleur_statut }} fs-6 p-2">{{ resultats.statut }}</span>
+                            <div class="mt-2">
+                                {% if resultats.ratio > 150 %}
+                                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                                {% elif resultats.ratio > 100 %}
+                                    <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détail des sous-risques -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3"><i class="fas fa-cubes"></i> Détail des Sous-Risques</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Module de Risque</th>
+                                        <th>Sous-Risque</th>
+                                        <th>Capital Requis (M€)</th>
+                                        <th>Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Risque Marché -->
+                                    <tr>
+                                        <td rowspan="3" class="align-middle fw-bold">Risque Marché</td>
+                                        <td>Risque de Taux</td>
+                                        <td>{{ resultats.sous_risques.marche.taux|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.marche.taux > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.marche.taux > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Risque Actions</td>
+                                        <td>{{ resultats.sous_risques.marche.actions|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.marche.actions > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.marche.actions > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Risque Immobilier</td>
+                                        <td>{{ resultats.sous_risques.marche.immobilier|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.marche.immobilier > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.marche.immobilier > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Risque Crédit -->
+                                    <tr>
+                                        <td rowspan="3" class="align-middle fw-bold">Risque Crédit</td>
+                                        <td>Contrepartie</td>
+                                        <td>{{ resultats.sous_risques.credit.contrepartie|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.credit.contrepartie > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.credit.contrepartie > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Spread</td>
+                                        <td>{{ resultats.sous_risques.credit.spread|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.credit.spread > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.credit.spread > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Concentration</td>
+                                        <td>{{ resultats.sous_risques.credit.concentration|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.credit.concentration > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.credit.concentration > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Risque Vie -->
+                                    <tr>
+                                        <td rowspan="3" class="align-middle fw-bold">Risque Vie</td>
+                                        <td>Mortalité</td>
+                                        <td>{{ resultats.sous_risques.vie.mortalite|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.vie.mortalite > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.vie.mortalite > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Longévité</td>
+                                        <td>{{ resultats.sous_risques.vie.longevite|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.vie.longevite > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.vie.longevite > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Rachat</td>
+                                        <td>{{ resultats.sous_risques.vie.rachat|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.vie.rachat > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.vie.rachat > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Risque Non-Vie -->
+                                    <tr>
+                                        <td rowspan="3" class="align-middle fw-bold">Risque Non-Vie</td>
+                                        <td>Risque Primes</td>
+                                        <td>{{ resultats.sous_risques.non_vie.primes|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.non_vie.primes > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.non_vie.primes > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Risque Sinistres</td>
+                                        <td>{{ resultats.sous_risques.non_vie.sinistres|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.non_vie.sinistres > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.non_vie.sinistres > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Catastrophes</td>
+                                        <td>{{ resultats.sous_risques.non_vie.catastrophes|default:0 }}</td>
+                                        <td>
+                                            {% if resultats.sous_risques.non_vie.catastrophes > 10 %}
+                                                <span class="badge bg-danger">Élevé</span>
+                                            {% elif resultats.sous_risques.non_vie.catastrophes > 5 %}
+                                                <span class="badge bg-warning">Moyen</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Faible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-primary">
+                        <i class="fas fa-chart-bar"></i> Voir dans les Indicateurs
+                    </a>
+                    <a href="{% url 'solvabilite_app:calcul_scr_avance' %}" class="btn btn-outline-primary ms-2">
+                        <i class="fas fa-edit"></i> Nouveau Calcul
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %} <!-- Fin du bloc utilisateurs autorisés -->
+
+<!-- Messages Django -->
+{% if messages %}
+<div class="row mt-4">
+    <div class="col-12">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

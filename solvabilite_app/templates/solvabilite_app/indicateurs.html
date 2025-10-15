@@ -1,0 +1,433 @@
+{% extends 'solvabilite_app/base.html' %}
+{% load static %}
+
+{% block title %}Indicateurs de Solvabilité - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar"></i>
+        {% if user_role == 'CLIENT' %}
+        Mes Indicateurs de Solvabilité
+        {% else %}
+        Indicateurs de Solvabilité
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<!-- Message pour les clients -->
+{% if user_role == 'CLIENT' %}
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle"></i>
+    <strong>Vue Client :</strong> Ces indicateurs vous donnent une vision synthétique de votre situation de solvabilité.
+    Pour une analyse détaillée, contactez votre risk manager.
+</div>
+{% endif %}
+
+{% if not compagnie %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    Aucune compagnie associée à votre compte. Les indicateurs ne peuvent pas être affichés.
+</div>
+{% elif not donnees %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    Aucune donnée de solvabilité disponible.
+    {% if 'calcul_scr' in permissions %}
+    <a href="{% url 'solvabilite_app:calcul_scr' %}" class="alert-link">Effectuez d'abord des calculs SCR</a>
+    {% else %}
+    Contactez votre actuaire pour plus d'informations.
+    {% endif %}
+</div>
+{% else %}
+<!-- Résumé des indicateurs -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h6>Dernier Ratio</h6>
+                <h3>{{ graphiques_data.ratios|last|default:0|floatformat:1 }}%</h3>
+                <small>Solvabilité</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h6>SCR Actuel</h6>
+                <h3>{{ graphiques_data.scr_totals|last|default:0|floatformat:0 }} M€</h3>
+                <small>Capital Requis</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h6>Fonds Propres</h6>
+                <h3>{{ graphiques_data.fonds_propres|last|default:0|floatformat:0 }} M€</h3>
+                <small>Capital Éligible</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h6>Périodes</h6>
+                <h3>{{ donnees|length }}</h3>
+                <small>Analysées</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques conditionnels selon le rôle -->
+<div class="row">
+    <!-- Évolution du Ratio de Solvabilité - Tous les rôles -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-chart-line"></i> Évolution du Ratio de Solvabilité
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="ratioChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition du SCR - Pas pour les clients -->
+    {% if user_role != 'CLIENT' %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-chart-pie"></i> Répartition du SCR par Module
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if graphiques_data.repartition %}
+                <canvas id="repartitionChart" height="250"></canvas>
+                {% else %}
+                <div class="text-center p-4">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucune donnée de répartition disponible</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Évolution des Modules de Risque - Pas pour les clients -->
+    {% if user_role != 'CLIENT' %}
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-cubes"></i> Évolution des Modules de Risque
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="modulesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Évolution du SCR et Fonds Propres - Tous les rôles -->
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-white">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-balance-scale"></i> Évolution du SCR et Fonds Propres
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="comparisonChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau des données avec restrictions pour clients -->
+<div class="card shadow mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h6 class="m-0 font-weight-bold">
+            <i class="fas fa-table"></i>
+            {% if user_role == 'CLIENT' %}
+            Historique des Ratios
+            {% else %}
+            Données Historiques Complètes
+            {% endif %}
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Ratio</th>
+                        <th>SCR Total</th>
+                        <th>Fonds Propres</th>
+                        {% if user_role != 'CLIENT' %}
+                        <th>MCR</th>
+                        {% endif %}
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donnee in donnees %}
+                    <tr>
+                        <td>{{ donnee.date_reference|date:"d/m/Y" }}</td>
+                        <td class="fw-bold
+                            {% if donnee.ratio_solvabilite >= 150 %}text-success
+                            {% elif donnee.ratio_solvabilite >= 100 %}text-warning
+                            {% else %}text-danger
+                            {% endif %}">
+                            {{ donnee.ratio_solvabilite|default:0|floatformat:1 }}%
+                        </td>
+                        <td>{{ donnee.total_scr|default:0|floatformat:2 }} M€</td>
+                        <td>{{ donnee.fonds_propres|default:0|floatformat:2 }} M€</td>
+                        {% if user_role != 'CLIENT' %}
+                        <td>{{ donnee.mcr|default:0|floatformat:2 }} M€</td>
+                        {% endif %}
+                        <td>
+                            {% with ratio=donnee.ratio_solvabilite|default:0 %}
+                                {% if ratio >= 150 %}
+                                    <span class="badge bg-success">Très Solide</span>
+                                {% elif ratio >= 120 %}
+                                    <span class="badge bg-info">Solide</span>
+                                {% elif ratio >= 100 %}
+                                    <span class="badge bg-warning">Surveillance</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Non Conforme</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Actions conditionnelles -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+                    </a>
+
+                    {% if 'exporter_rapports' in permissions %}
+                    <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-danger">
+                        <i class="fas fa-file-pdf"></i> Exporter en PDF
+                    </a>
+                    {% endif %}
+
+                    {% if 'calcul_scr' in permissions %}
+                    <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-primary">
+                        <i class="fas fa-calculator"></i> Nouveau calcul SCR
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Données des graphiques
+const graphData = {
+    dates: {{ graphiques_data.dates|safe }},
+    ratios: {{ graphiques_data.ratios }},
+    scr_totals: {{ graphiques_data.scr_totals }},
+    fonds_propres: {{ graphiques_data.fonds_propres }},
+    modules: {{ graphiques_data.modules|safe }},
+    repartition: {{ graphiques_data.repartition|safe }}
+};
+
+// Graphique Évolution du Ratio
+if (document.getElementById('ratioChart')) {
+    new Chart(document.getElementById('ratioChart'), {
+        type: 'line',
+        data: {
+            labels: graphData.dates,
+            datasets: [{
+                label: 'Ratio de Solvabilité (%)',
+                data: graphData.ratios,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Évolution du Ratio de Solvabilité',
+                    font: { size: 14 }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Ratio (%)'
+                    },
+                    min: 0
+                }
+            }
+        }
+    });
+}
+
+// Graphique Répartition (uniquement si disponible et pour rôles autorisés)
+if (document.getElementById('repartitionChart') && Object.keys(graphData.repartition).length > 0) {
+    new Chart(document.getElementById('repartitionChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(graphData.repartition),
+            datasets: [{
+                data: Object.values(graphData.repartition),
+                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#e83e8c']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Graphique Modules de Risque (uniquement pour rôles autorisés)
+if (document.getElementById('modulesChart') && graphData.modules.marche.length > 0) {
+    new Chart(document.getElementById('modulesChart'), {
+        type: 'bar',
+        data: {
+            labels: graphData.dates,
+            datasets: [
+                {
+                    label: 'Marché',
+                    data: graphData.modules.marche,
+                    backgroundColor: '#007bff'
+                },
+                {
+                    label: 'Crédit',
+                    data: graphData.modules.credit,
+                    backgroundColor: '#28a745'
+                },
+                {
+                    label: 'Vie',
+                    data: graphData.modules.vie,
+                    backgroundColor: '#ffc107'
+                },
+                {
+                    label: 'Non-Vie',
+                    data: graphData.modules.non_vie,
+                    backgroundColor: '#dc3545'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Capital Requis (M€)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Graphique Comparaison SCR/Fonds Propres
+if (document.getElementById('comparisonChart')) {
+    new Chart(document.getElementById('comparisonChart'), {
+        type: 'line',
+        data: {
+            labels: graphData.dates,
+            datasets: [
+                {
+                    label: 'SCR Total',
+                    data: graphData.scr_totals,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Fonds Propres',
+                    data: graphData.fonds_propres,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Montant (M€)'
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,590 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Tableau de Bord - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+        Tableau de Bord {{ user.get_role_display }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Actualiser
+            </button>
+            <!-- Export PDF conditionnel -->
+            {% if 'exporter_rapports' in permissions %}
+            <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-sm btn-danger">
+                <i class="fas fa-file-pdf me-1"></i>Export PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Alertes et notifications -->
+{% if messages %}
+<div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Alertes spécifiques par rôle -->
+{% if user_role == 'ACTUAIRE' and donnees_specifiques.alertes_calculs %}
+<div class="alert alert-info">
+    <i class="fas fa-calculator me-2"></i>
+    <strong>Alertes Actuarielles :</strong>
+    {% for alerte in donnees_specifiques.alertes_calculs %}
+    <br>{{ alerte }}
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if user_role == 'RISK_MANAGER' and donnees_specifiques.alertes_risques %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Alertes Risques :</strong>
+    {% for alerte in donnees_specifiques.alertes_risques %}
+    <br>{{ alerte }}
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Section spécifique par rôle -->
+{% if user_role == 'ACTUAIRE' %}
+<!-- TABLEAU DE BORD ACTUAIRE -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Espace Actuaire
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Calculs Récents</h6>
+                        {% if donnees_specifiques.calculs_recents %}
+                        <div class="list-group">
+                            {% for calcul in donnees_specifiques.calculs_recents %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ calcul.methode_calcul }}</span>
+                                    <span class="badge bg-info">{{ calcul.resultat_scr }} M€</span>
+                                </div>
+                                <small class="text-muted">{{ calcul.date_calcul|date:"d/m/Y" }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Aucun calcul récent</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Actions Rapides</h6>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-primary">
+                                <i class="fas fa-calculator me-2"></i>Calcul SCR Standard
+                            </a>
+                            <a href="{% url 'solvabilite_app:calcul_scr_avance' %}" class="btn btn-warning">
+                                <i class="fas fa-cogs me-2"></i>Calcul SCR Avancé
+                            </a>
+                            <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-info">
+                                <i class="fas fa-chart-bar me-2"></i>Analyser les Indicateurs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user_role == 'RISK_MANAGER' %}
+<!-- TABLEAU DE BORD RISK MANAGER -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Espace Risk Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Risques en Surveillance</h6>
+                        {% if donnees_specifiques.risques_principaux %}
+                        <div class="list-group">
+                            {% for risque in donnees_specifiques.risques_principaux %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>{{ risque.nom }}</span>
+                                    <span class="badge bg-{% if risque.niveau == 'Élevé' %}danger{% else %}warning{% endif %}">
+                                        {{ risque.niveau }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">Tendance: {{ risque.tendance }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Aucun risque en surveillance active</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Actions Risques</h6>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-warning">
+                                <i class="fas fa-calculator me-2"></i>Calcul SCR
+                            </a>
+                            <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-info">
+                                <i class="fas fa-chart-bar me-2"></i>Surveillance Indicateurs
+                            </a>
+                            <a href="{% url 'solvabilite_app:export_rapport_pdf' 'risques' %}" class="btn btn-danger">
+                                <i class="fas fa-file-pdf me-2"></i>Rapport Risques
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user_role == 'DG' %}
+<!-- TABLEAU DE BORD DIRECTEUR GÉNÉRAL -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chess-king me-2"></i>Vue Direction Générale
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% if donnees_specifiques.vues_strategiques %}
+                    {% for vue in donnees_specifiques.vues_strategiques %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas {{ vue.icone }} fa-2x text-primary mb-2"></i>
+                                <h6>{{ vue.titre }}</h6>
+                                <h4 class="text-success">{{ vue.valeur }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-success">
+                        <i class="fas fa-file-alt me-2"></i>Rapport de Direction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user_role == 'CLIENT' %}
+<!-- TABLEAU DE BORD CLIENT -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Mon Espace Client
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% if donnees_specifiques.mes_infos %}
+                    {% for info in donnees_specifiques.mes_infos %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>{{ info.titre }}</h6>
+                                <h4 class="text-{% if info.statut == 'Conforme' %}success{% else %}warning{% endif %}">
+                                    {{ info.valeur }}
+                                </h4>
+                                <span class="badge bg-{% if info.statut == 'Conforme' %}success{% else %}warning{% endif %}">
+                                    {{ info.statut }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="text-center mt-3">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Pour plus de détails, contactez votre risk manager.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user_role == 'REGULATEUR' %}
+<!-- TABLEAU DE BORD RÉGULATEUR -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-gavel me-2"></i>Espace Régulateur
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Supervision des Compagnies</h6>
+                {% if donnees_specifiques.supervision_data %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Compagnie</th>
+                                <th>Ratio</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in donnees_specifiques.supervision_data %}
+                            <tr>
+                                <td>{{ data.compagnie }}</td>
+                                <td class="fw-bold text-{% if data.ratio >= '150%' %}success{% elif data.ratio >= '100%' %}warning{% else %}danger{% endif %}">
+                                    {{ data.ratio }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if data.statut == 'Conforme' %}success{% else %}warning{% endif %}">
+                                        {{ data.statut }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Audit</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Aucune donnée de supervision disponible</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif user_role == 'ADMIN' %}
+<!-- TABLEAU DE BORD ADMIN -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>Administration Système
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% if donnees_specifiques.stats_systeme %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h6>Utilisateurs Actifs</h6>
+                                <h3 class="text-primary">{{ donnees_specifiques.stats_systeme.utilisateurs_actifs }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas fa-calculator fa-2x text-success mb-2"></i>
+                                <h6>Calculs Aujourd'hui</h6>
+                                <h3 class="text-success">{{ donnees_specifiques.stats_systeme.calculs_jour }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas fa-building fa-2x text-info mb-2"></i>
+                                <h6>Compagnies Actives</h6>
+                                <h3 class="text-info">{{ donnees_specifiques.stats_systeme.compagnies_actives }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Métriques principales (communes à tous) -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-{% if indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 150 %}success{% elif indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 100 %}warning{% else %}danger{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="h3 mb-0 text-{% if indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 150 %}success{% elif indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 100 %}warning{% else %}danger{% endif %}">
+                            {{ indicateurs.ratio_solvabilite|default:"0" }}%
+                        </div>
+                        <div class="text-muted">Ratio Solvabilité</div>
+                    </div>
+                    <div class="text-{% if indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 150 %}success{% elif indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 100 %}warning{% else %}danger{% endif %}">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="h3 mb-0 text-primary">{{ indicateurs.scr_total|default:"0" }} M€</div>
+                        <div class="text-muted">SCR Total</div>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-euro-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="h3 mb-0 text-success">{{ indicateurs.fonds_propres|default:"0" }} M€</div>
+                        <div class="text-muted">Fonds Propres</div>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-piggy-bank fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="h3 mb-0 text-info">{{ indicateurs.mcr|default:"0" }} M€</div>
+                        <div class="text-muted">MCR</div>
+                    </div>
+                    <div class="text-info">
+                        <i class="fas fa-balance-scale fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides conditionnelles -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Actions Disponibles
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <!-- Calcul SCR - Actuaires et Risk Managers seulement -->
+                    {% if 'calcul_scr' in permissions %}
+                    <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-primary">
+                        <i class="fas fa-calculator me-2"></i>Calculer SCR
+                    </a>
+                    {% endif %}
+
+                    <!-- Calcul Avancé - Actuaires seulement -->
+                    {% if user_role == 'ACTUAIRE' or user_role == 'ADMIN' %}
+                    <a href="{% url 'solvabilite_app:calcul_scr_avance' %}" class="btn btn-warning">
+                        <i class="fas fa-cogs me-2"></i>Calcul Avancé
+                    </a>
+                    {% endif %}
+
+                    <!-- Indicateurs - Tous sauf rôles très limités -->
+                    {% if 'voir_indicateurs' in permissions or 'voir_indicateurs_publics' in permissions %}
+                    <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>Voir Indicateurs
+                    </a>
+                    {% endif %}
+
+                    <!-- Export PDF - Avec permissions -->
+                    {% if 'exporter_rapports' in permissions %}
+                    <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-danger">
+                        <i class="fas fa-file-pdf me-2"></i>Exporter PDF
+                    </a>
+                    {% endif %}
+
+                    <!-- Saisie données - Rôles techniques -->
+                    {% if user_role in 'ACTUAIRE,RISK_MANAGER,ADMIN' %}
+                    <a href="{% url 'solvabilite_app:saisie_donnees' %}" class="btn btn-success">
+                        <i class="fas fa-edit me-2"></i>Saisir Données
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Rapports conditionnelle -->
+{% if 'exporter_rapports' in permissions %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Génération de Rapports
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                <h5>Rapport de Synthèse</h5>
+                                <p class="text-muted">Rapport PDF complet avec indicateurs de solvabilité</p>
+                                <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-danger">
+                                    <i class="fas fa-download me-2"></i>Télécharger PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-alt fa-3x text-info mb-3"></i>
+                                <h5>Rapport Détaillé</h5>
+                                <p class="text-muted">Rapport PDF avec analyse approfondie</p>
+                                <a href="{% url 'solvabilite_app:export_rapport_pdf' 'detail' %}" class="btn btn-info">
+                                    <i class="fas fa-download me-2"></i>Télécharger PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rapports spécifiques par rôle -->
+                {% if user_role == 'ACTUAIRE' or user_role == 'ADMIN' %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calculator fa-3x text-warning mb-3"></i>
+                                <h5>Rapport Technique</h5>
+                                <p class="text-muted">Rapport détaillé des calculs actuariels</p>
+                                <a href="{% url 'solvabilite_app:export_rapport_pdf' 'technique' %}" class="btn btn-warning">
+                                    <i class="fas fa-download me-2"></i>Télécharger PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Informations utilisateur -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Informations Utilisateur
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <p><strong>Nom :</strong><br>{{ user.get_full_name|default:"Non renseigné" }}</p>
+                        <p><strong>Email :</strong><br>{{ user.email }}</p>
+                    </div>
+                    <div class="col-sm-6">
+                        <p><strong>Rôle :</strong><br>
+                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                        </p>
+                        <p><strong>Entreprise :</strong><br>
+                            {{ user.compagnie.nom|default:"Non assignée" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Statut Réglementaire
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 150 %}
+                <div class="alert alert-success">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Conforme</h5>
+                            <p class="mb-0">Ratio au-dessus des exigences minimales réglementaires</p>
+                        </div>
+                    </div>
+                </div>
+                {% elif indicateurs.ratio_solvabilite and indicateurs.ratio_solvabilite > 100 %}
+                <div class="alert alert-warning">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Surveillance</h5>
+                            <p class="mb-0">Ratio conforme mais nécessite une attention particulière</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-times-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Non Conforme</h5>
+                            <p class="mb-0">Ratio en dessous du seuil réglementaire minimum</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

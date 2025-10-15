@@ -1,0 +1,509 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+/* Styles améliorés pour la page d'accueil */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    padding: 4rem 2rem !important;
+    margin-top: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.hero-visual {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.feature-icon {
+    transition: all 0.3s ease;
+}
+
+.hover-card:hover .feature-icon {
+    transform: scale(1.1);
+}
+
+/* Styles pour l'affichage du mot de passe */
+.password-toggle-group {
+    position: relative;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    z-index: 3;
+}
+
+.password-toggle-icon:hover {
+    color: #495057;
+}
+
+.password-toggle-icon:focus {
+    outline: none;
+    color: #667eea;
+}
+
+/* Ajustement du padding pour le champ mot de passe avec icône */
+.password-field {
+    padding-right: 45px !important;
+}
+
+/* Style pour les indicateurs de force du mot de passe */
+.password-strength {
+    height: 4px;
+    border-radius: 2px;
+    margin-top: 5px;
+    transition: all 0.3s ease;
+}
+
+.password-strength-weak {
+    background-color: #dc3545;
+    width: 25%;
+}
+
+.password-strength-medium {
+    background-color: #ffc107;
+    width: 50%;
+}
+
+.password-strength-good {
+    background-color: #17a2b8;
+    width: 75%;
+}
+
+.password-strength-strong {
+    background-color: #28a745;
+    width: 100%;
+}
+
+.password-requirements {
+    font-size: 0.875rem;
+}
+
+.requirement-met {
+    color: #28a745;
+}
+
+.requirement-unmet {
+    color: #6c757d;
+}
+
+/* Amélioration des formulaires */
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-text {
+    font-size: 0.875rem;
+}
+
+/* Alertes améliorées */
+.alert {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Boutons améliorés */
+.btn {
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+/* Cards améliorées */
+.card {
+    box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card-header {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 12px 12px 0 0 !important;
+}
+
+/* Navigation améliorée */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+/* Tableaux améliorés */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom badges */
+.badge {
+    font-size: 0.7em;
+    font-weight: 500;
+}
+
+/* Chart containers */
+canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    .display-4 {
+        font-size: 2rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+    }
+
+    .navbar-nav {
+        text-align: center;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar, .btn, .alert, footer {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Code examples */
+code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    color: #e83e8c;
+}
+/* ===== STYLES SPÉCIFIQUES SOLVABILITÉ II ===== */
+
+/* Indicateurs de solvabilité */
+.ratio-indicator {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.ratio-good {
+    color: #28a745;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.ratio-warning {
+    color: #ffc107;
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.ratio-danger {
+    color: #dc3545;
+    background: linear-gradient(135deg, #dc3545, #e83e8c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Cartes métriques */
+.metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* Graphiques SCR */
+.scr-chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.chart-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+/* Badges de statut */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.status-compliant {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.status-warning {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: white;
+}
+
+.status-critical {
+    background: linear-gradient(135deg, #dc3545, #e83e8c);
+    color: white;
+}
+
+/* Tableaux de données financières */
+.financial-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 1rem;
+}
+
+.financial-table td {
+    padding: 0.75rem 1rem;
+    border-color: #e9ecef;
+    vertical-align: middle;
+}
+
+.financial-table tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+/* Barre de progression pour les ratios */
+.ratio-progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.ratio-progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-good { background: linear-gradient(90deg, #28a745, #20c997); }
+.progress-warning { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+.progress-danger { background: linear-gradient(90deg, #dc3545, #e83e8c); }
+
+/* Navigation par onglets pour les calculs */
+.calc-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.3s ease;
+}
+
+.calc-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.calc-tabs .nav-link:hover:not(.active) {
+    background-color: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+/* Formulaires de calcul */
+.calc-form-group {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.calc-input-group {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .ratio-indicator {
+        font-size: 2rem;
+    }
+
+    .financial-table {
+        font-size: 0.875rem;
+    }
+
+    .calc-tabs .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Animations spécifiques */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse-alert {
+    animation: pulse 2s infinite;
+}
+
+/* Mode sombre (optionnel) */
+@media (prefers-color-scheme: dark) {
+    .metric-card {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        color: white;
+    }
+
+    .metric-value {
+        color: white;
+    }
+}

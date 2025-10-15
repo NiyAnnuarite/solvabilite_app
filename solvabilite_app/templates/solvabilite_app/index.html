@@ -1,0 +1,189 @@
+{% extends 'solvabilite_app/base.html' %}
+
+{% block title %}Accueil - Solvabilité II{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 text-center">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-shield-alt text-primary"></i><br>
+            Application Solvabilité II
+        </h1>
+        <p class="lead mb-5">
+            Outil complet de mesure de la solvabilité pour les compagnies d'assurance
+        </p>
+
+        <!-- Navigation guidée pour nouveaux utilisateurs -->
+        <div class="row mb-5">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-compass"></i> Guide de Navigation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="step-card">
+                                    <div class="step-number">1</div>
+                                    <i class="fas fa-user-plus fa-2x text-success mb-3"></i>
+                                    <h5>Inscription/Connexion</h5>
+                                    <p class="text-muted">Créez votre compte ou connectez-vous</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="step-card">
+                                    <div class="step-number">2</div>
+                                    <i class="fas fa-calculator fa-2x text-warning mb-3"></i>
+                                    <h5>Calcul SCR</h5>
+                                    <p class="text-muted">Effectuez vos calculs de solvabilité</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="step-card">
+                                    <div class="step-number">3</div>
+                                    <i class="fas fa-chart-bar fa-2x text-info mb-3"></i>
+                                    <h5>Analyse</h5>
+                                    <p class="text-muted">Consultez vos indicateurs et rapports</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions principales -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-plus fa-3x text-success mb-3"></i>
+                        <h4>Nouveau compte</h4>
+                        <p class="text-muted">Créez un compte pour accéder à toutes les fonctionnalités</p>
+                        <div class="mt-4">
+                            <a href="{% url 'solvabilite_app:inscription' %}" class="btn btn-success btn-lg me-2">
+                                <i class="fas fa-user-plus"></i> S'inscrire
+                            </a>
+                            <a href="{% url 'solvabilite_app:connexion' %}" class="btn btn-outline-primary">
+                                Déjà inscrit ?
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-body text-center">
+                        <i class="fas fa-play-circle fa-3x text-primary mb-3"></i>
+                        <h4>Démo rapide</h4>
+                        <p class="text-muted">Découvrez l'application avec un compte de démonstration</p>
+                        <div class="mt-4">
+                            <button class="btn btn-primary btn-lg" onclick="startDemo()">
+                                <i class="fas fa-play"></i> Commencer la démo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation rapide pour utilisateurs connectés -->
+        {% if user.is_authenticated %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-rocket"></i> Navigation Rapide</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'solvabilite_app:tableau_de_bord' %}" class="btn btn-outline-primary btn-lg w-100">
+                                    <i class="fas fa-tachometer-alt"></i><br>
+                                    Tableau de Bord
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'solvabilite_app:calcul_scr' %}" class="btn btn-outline-success btn-lg w-100">
+                                    <i class="fas fa-calculator"></i><br>
+                                    Calcul SCR
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'solvabilite_app:indicateurs' %}" class="btn btn-outline-info btn-lg w-100">
+                                    <i class="fas fa-chart-bar"></i><br>
+                                    Indicateurs
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'solvabilite_app:export_rapport_pdf' 'synthese' %}" class="btn btn-outline-warning btn-lg w-100">
+                                    <i class="fas fa-file-pdf"></i><br>
+                                    Rapports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function startDemo() {
+    // Redirection vers la connexion avec message de démo
+    window.location.href = "{% url 'solvabilite_app:connexion' %}";
+}
+
+// Animation des étapes
+document.addEventListener('DOMContentLoaded', function() {
+    const stepCards = document.querySelectorAll('.step-card');
+    stepCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+});
+</script>
+
+<style>
+.step-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    font-weight: bold;
+}
+
+.card {
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+</style>
+{% endblock %}
